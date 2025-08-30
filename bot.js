@@ -1,14 +1,11 @@
-
+// ✨ لا تغيير في هذا الجزء العلوي ✨
 const express = require('express');
 const bedrock = require('bedrock-protocol');
 const https = require('https');
 const { convertArabicText } = require('./arabic-fix.js');
 
-// ✨ 2. تهيئة تطبيق الويب
 const app = express();
-// ✨ 3. تحديد البورت الذي ستعمل عليه الخدمة (Render يحدده تلقائيًا)
 const PORT = process.env.PORT || 3000;
-
 
 const BOT_USERNAME = '§bAI§f';
 const GEMINI_API_KEYS = [
@@ -32,14 +29,6 @@ function processOnlyArabicParts(text) {
     });
 }
 
-const client = bedrock.createClient({
-  host: 'emerald.magmanode.com',
-  port: 26222,
-  username: BOT_USERNAME,
-  offline: true,
-  version: '1.21.100'
-});
-
 async function getAIResponse(history) {
     return new Promise((resolve) => {
         const currentApiKey = getRandomApiKey();
@@ -49,7 +38,7 @@ async function getAIResponse(history) {
         }));
         const systemPrompt = {
             parts: [{
-                text: "You are a friendly assistant in Minecraft bedrock chat. Give short responses, Don't send emojis. You can remember the last few messages in our conversation."
+                text: "You are a friendly assistant in Minecraft bedrock chat, Don't send emojis. You can remember the last few messages in our conversation."
             }]
         };
         const postData = JSON.stringify({
@@ -90,79 +79,101 @@ async function getAIResponse(history) {
     });
 }
 
-client.on('spawn', () => {
-  console.log('Bot connected!');
-  setTimeout(() => {
-    const welcomeMessage = 'How i can help you §b=)§f';
-    client.write('text', {
-      type: 'chat',
-      needs_translation: false,
-      source_name: BOT_USERNAME,
-      xuid: '',
-      platform_chat_id: '',
-      message: processOnlyArabicParts(welcomeMessage),
-      parameters: [],
-      filtered_message: ''
-    });
-  }, 2000);
-});
-
-client.on('text', async (packet) => {
-  if (packet.type !== 'chat' || packet.source_name === BOT_USERNAME) return;
-
-  const player = packet.source_name;
-  const originalMessage = packet.message;
-
-  if (!originalMessage.startsWith('!')) {
-      return;
-  }
-  
-  const messageContent = originalMessage.substring(1).trim();
-
-  if (!messageContent) {
-      return;
-  }
-
-  if (!conversations[player]) {
-    conversations[player] = [];
-  }
-
-  const playerHistory = conversations[player];
-  console.log(`[${player}] In: ${messageContent}`);
-  playerHistory.push({ role: 'user', content: messageContent });
-
-  while (playerHistory.length > MAX_HISTORY_LENGTH) {
-    playerHistory.shift();
-  }
-
-  const reply = await getAIResponse(playerHistory);
-  playerHistory.push({ role: 'assistant', content: reply });
-
-   while (playerHistory.length > MAX_HISTORY_LENGTH) {
-    playerHistory.shift();
-  }
-
-  setTimeout(() => {
-    const finalMessage = `@${player} ${reply}`;
-    const processedMessage = processOnlyArabicParts(finalMessage);
-
-    client.write('text', {
-      type: 'chat',
-      needs_translation: false,
-      source_name: BOT_USERNAME,
-      xuid: '',
-      platform_chat_id: '',
-      message: processedMessage,
-      parameters: [],
-      filtered_message: ''
+// ✨ تم نقل كل منطق البوت إلى دالة واحدة ✨
+function startBot() {
+    console.log('Starting AI Bot...');
+    const client = bedrock.createClient({
+        host: 'emerald.magmanode.com',
+        port: 26222,
+        username: BOT_USERNAME,
+        offline: true,
+        version: '1.21.100'
     });
 
-    console.log(`[Bot to ${player}] Out: ${processedMessage}`);
-  }, 1500);
+    client.on('spawn', () => {
+        console.log('Bot connected!');
+        setTimeout(() => {
+            const welcomeMessage = 'How i can help you §b=)§f';
+            client.write('text', {
+                type: 'chat',
+                needs_translation: false,
+                source_name: BOT_USERNAME,
+                xuid: '',
+                platform_chat_id: '',
+                message: processOnlyArabicParts(welcomeMessage),
+                parameters: [],
+                filtered_message: ''
+            });
+        }, 2000);
+    });
+
+    client.on('text', async (packet) => {
+        if (packet.type !== 'chat' || packet.source_name === BOT_USERNAME) return;
+
+        const player = packet.source_name;
+        const originalMessage = packet.message;
+
+        if (!originalMessage.startsWith('!')) {
+            return;
+        }
+
+        const messageContent = originalMessage.substring(1).trim();
+
+        if (!messageContent) {
+            return;
+        }
+
+        if (!conversations[player]) {
+            conversations[player] = [];
+        }
+
+        const playerHistory = conversations[player];
+        console.log(`[${player}] In: ${messageContent}`);
+        playerHistory.push({ role: 'user', content: messageContent });
+
+        while (playerHistory.length > MAX_HISTORY_LENGTH) {
+            playerHistory.shift();
+        }
+
+        const reply = await getAIResponse(playerHistory);
+        playerHistory.push({ role: 'assistant', content: reply });
+
+        while (playerHistory.length > MAX_HISTORY_LENGTH) {
+            playerHistory.shift();
+        }
+
+        setTimeout(() => {
+            const finalMessage = `@${player} ${reply}`;
+            const processedMessage = processOnlyArabicParts(finalMessage);
+
+            client.write('text', {
+                type: 'chat',
+                needs_translation: false,
+                source_name: BOT_USERNAME,
+                xuid: '',
+                platform_chat_id: '',
+                message: processedMessage,
+                parameters: [],
+                filtered_message: ''
+            });
+
+            console.log(`[Bot to ${player}] Out: ${processedMessage}`);
+        }, 1500);
+    });
+
+    client.on('error', (err) => {
+        console.error('Error:', err.message);
+    });
+}
+
+// ✨ كود الواجهة الوهمية لإبقاء الخدمة تعمل ✨
+app.get('/', (req, res) => {
+  res.status(200).send('Bot is running and ready!');
 });
 
-client.on('error', (err) => {
-  console.error('Error:', err.message);
+// ✨ تشغيل خادم الويب أولاً، ثم تشغيل البوت ✨
+app.listen(PORT, () => {
+  console.log(`Web server listening on port ${PORT} to keep the bot alive.`);
+  // بعد أن يعمل خادم الويب بنجاح، نبدأ البوت
+  startBot();
 });
-
-console.log('Starting AI...');
