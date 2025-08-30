@@ -165,13 +165,4 @@ client.on('error', (err) => {
   console.error('Error:', err.message);
 });
 
-// ✨ 4. كود الواجهة الوهمية لإبقاء الخدمة تعمل
-app.get('/', (req, res) => {
-  res.status(200).send('Bot is running and ready!');
-});
-
-// ✨ 5. تشغيل خادم الويب والبوت معًا
-app.listen(PORT, () => {
-  console.log(`Web server listening on port ${PORT} to keep the bot alive.`);
-  console.log('Starting AI Bot...');
-});
+console.log('Starting AI...');
