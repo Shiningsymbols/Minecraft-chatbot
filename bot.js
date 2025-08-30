@@ -1,4 +1,4 @@
-// ✨ 1. استدعاء مكتبة express لخادم الويب
+
 const express = require('express');
 const bedrock = require('bedrock-protocol');
 const https = require('https');
