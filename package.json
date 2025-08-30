@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bedrock-protocol": "^3.48.1"
+    "bedrock-protocol": "^3.48.1",
+    "express": "^5.1.0"
   }
 }

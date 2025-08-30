@@ -1,6 +1,14 @@
+// ✨ 1. استدعاء مكتبة express لخادم الويب
+const express = require('express');
 const bedrock = require('bedrock-protocol');
 const https = require('https');
 const { convertArabicText } = require('./arabic-fix.js');
+
+// ✨ 2. تهيئة تطبيق الويب
+const app = express();
+// ✨ 3. تحديد البورت الذي ستعمل عليه الخدمة (Render يحدده تلقائيًا)
+const PORT = process.env.PORT || 3000;
+
 
 const BOT_USERNAME = '§bAI§f';
 const GEMINI_API_KEYS = [
@@ -17,12 +25,8 @@ function getRandomApiKey() {
 const conversations = {};
 const MAX_HISTORY_LENGTH = 6;
 
-
 function processOnlyArabicParts(text) {
-    // هذا التعبير النمطي يجد أي مقطع متصل من الحروف العربية والمسافات
     const arabicRegex = /([\u0600-\u06FF\s.,!؟]+)/g;
-    
-    // نستبدل كل مقطع عربي بنسخته المعالجة
     return text.replace(arabicRegex, (match) => {
         return convertArabicText(match);
     });
@@ -38,33 +42,27 @@ const client = bedrock.createClient({
 
 async function getAIResponse(history) {
     return new Promise((resolve) => {
-        // استخدام مفتاح عشوائي لكل طلب
         const currentApiKey = getRandomApiKey();
-        
         const geminiContents = history.map(turn => ({
             role: turn.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: turn.content }]
         }));
-
         const systemPrompt = {
             parts: [{
                 text: "You are a friendly assistant in Minecraft bedrock chat. Give short responses, Don't send emojis. You can remember the last few messages in our conversation."
             }]
         };
-
         const postData = JSON.stringify({
             contents: geminiContents,
             systemInstruction: systemPrompt
         });
-
         const options = {
             hostname: 'generativelanguage.googleapis.com',
             port: 443,
-            path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`,
+            path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         };
-
         const req = https.request(options, (res) => {
             let body = '';
             res.on('data', (chunk) => { body += chunk; });
@@ -115,27 +113,22 @@ client.on('text', async (packet) => {
   const player = packet.source_name;
   const originalMessage = packet.message;
 
-  // ✨ 2. التحقق مما إذا كانت الرسالة تبدأ بـ '!' ✨
   if (!originalMessage.startsWith('!')) {
-      return; // تجاهل الرسالة إذا لم تبدأ بـ '!'
+      return;
   }
   
-  // ✨ 3. قص علامة '!' من بداية الرسالة ✨
   const messageContent = originalMessage.substring(1).trim();
 
-  // تجاهل الرسالة إذا كانت فارغة بعد قص العلامة
   if (!messageContent) {
       return;
   }
 
   if (!conversations[player]) {
     conversations[player] = [];
-    //console.log(`New conversation started for player: ${player}`);
   }
 
   const playerHistory = conversations[player];
   console.log(`[${player}] In: ${messageContent}`);
-  // استخدام محتوى الرسالة النظيف بدون '!'
   playerHistory.push({ role: 'user', content: messageContent });
 
   while (playerHistory.length > MAX_HISTORY_LENGTH) {
@@ -151,7 +144,6 @@ client.on('text', async (packet) => {
 
   setTimeout(() => {
     const finalMessage = `@${player} ${reply}`;
-    // ✨ 4. استخدام الدالة الجديدة التي تعالج العربية فقط ✨
     const processedMessage = processOnlyArabicParts(finalMessage);
 
     client.write('text', {
@@ -173,4 +165,13 @@ client.on('error', (err) => {
   console.error('Error:', err.message);
 });
 
-console.log('Starting AI...');
+// ✨ 4. كود الواجهة الوهمية لإبقاء الخدمة تعمل
+app.get('/', (req, res) => {
+  res.status(200).send('Bot is running and ready!');
+});
+
+// ✨ 5. تشغيل خادم الويب والبوت معًا
+app.listen(PORT, () => {
+  console.log(`Web server listening on port ${PORT} to keep the bot alive.`);
+  console.log('Starting AI Bot...');
+});
